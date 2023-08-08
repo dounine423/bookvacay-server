@@ -1,0 +1,670 @@
+{
+    "holder": {
+        "id": 6,
+        "name": "first",
+        "surname": "developer",
+        "email": "dounine423@gmail.com",
+        "phone": "1234567810"
+    },
+    "name": "Dune Ridge Country House",
+    "category": 4,
+    "address": "Corner R330 and Tarragona Road St. Francis Bay",
+    "accommodation": "Hotel",
+    "phones": [
+        {
+            "phoneNumber": "002742941560",
+            "phoneType": "Phonebooking"
+        },
+        {
+            "phoneNumber": "0027422941560",
+            "phoneType": "Phonehotel"
+        },
+        {
+            "phoneNumber": "0027422941560",
+            "phoneType": "Faxnumber"
+        }
+    ],
+    "aduts": 2,
+    "child": 0,
+    "inDate": "2023-08-15",
+    "outDate": "2023-08-17",
+    "amount": 290.57,
+    "currency": "EUR",
+    "facility": [
+        {
+            "facilityCode": 70,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Lift access",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 270,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Room service",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 280,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Laundry service",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 310,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Bicycle hire service",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 320,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indYesOrNo": true,
+            "name": "Car park",
+            "order": 1,
+            "voucher": true
+        },
+        {
+            "ageFrom": 1,
+            "ageTo": 8,
+            "facilityCode": 485,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Babysitting service",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 490,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Car hire",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 525,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Bellboy service",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 550,
+            "facilityGroupCode": 70,
+            "indFee": true,
+            "indYesOrNo": true,
+            "name": "Wi-fi",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 225,
+            "facilityGroupCode": 71,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Smoking area",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 595,
+            "facilityGroupCode": 72,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Secretarial service",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 600,
+            "facilityGroupCode": 72,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Photocopier",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 620,
+            "facilityGroupCode": 72,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Printer",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 190,
+            "facilityGroupCode": 73,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Game room",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 420,
+            "facilityGroupCode": 74,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Sauna",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 450,
+            "facilityGroupCode": 74,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Massage",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 460,
+            "facilityGroupCode": 74,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Spa treatments",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 620,
+            "facilityGroupCode": 74,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Spa centre",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 562,
+            "facilityGroupCode": 85,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Non-smoking establishment",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 90,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Aqua fit",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 160,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Banana boating",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 210,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Windsurfing",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 240,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Canoeing",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 270,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Squash",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 295,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Fitness",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 300,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Archery",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 310,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Horse riding",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 320,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Cycling / mountain biking",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 370,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Bowling alley",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 390,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Golf",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 410,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Surfing",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 430,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Tennis",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 520,
+            "facilityGroupCode": 90,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Golf practice facility",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 120,
+            "facilityGroupCode": 60,
+            "indFee": true,
+            "indLogic": true,
+            "name": "Minibar",
+            "order": 1,
+            "voucher": false
+        },
+        {
+            "facilityCode": 275,
+            "facilityGroupCode": 60,
+            "indFee": true,
+            "indLogic": false,
+            "name": "Extra beds on demand",
+            "order": 1,
+            "voucher": false
+        }
+    ],
+    "reference": "241-824595",
+    "createAt": "2023-08-03",
+    "supply": {
+        "name": "HOTELBEDS DMCC",
+        "vatNumber": "100035906500003"
+    },
+    "invoice": {
+        "code": "E14",
+        "company": "HOTELBEDS S.L.U.",
+        "registrationNumber": "ESB57218372"
+    },
+    "rooms": [
+        {
+            "board": "BED AND BREAKFAST",
+            "c_date": "2023-08-04",
+            "comments": "Car park YES (with additional debit notes)<br> Check-in hour 14:00 - 18:00<br> LGTBIQ friendly<br> Minimum check-in age 21<br>",
+            "rooms": 1,
+            "adult": 2,
+            "child": 0,
+            "name": "GARDEN SUITE",
+            "paxes": [
+                {
+                    "paxes": {
+                        "adult": [
+                            {
+                                "name": "first developer"
+                            },
+                            {
+                                "name": "asdf asdf"
+                            }
+                        ]
+                    },
+                    "roomId": 1
+                }
+            ],
+            "facility": [
+                {
+                    "facilityCode": 10,
+                    "facilityGroupCode": 60,
+                    "indLogic": true,
+                    "name": "Bathroom",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 20,
+                    "facilityGroupCode": 60,
+                    "indLogic": true,
+                    "name": "Shower",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 30,
+                    "facilityGroupCode": 60,
+                    "indLogic": true,
+                    "name": "Bathtub",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 40,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Hairdryer",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 50,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Direct dial telephone",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 55,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "TV",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 100,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": false,
+                    "name": "Internet access",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 120,
+                    "facilityGroupCode": 60,
+                    "indFee": true,
+                    "indLogic": true,
+                    "name": "Minibar",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 135,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Mini fridge",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 143,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Tea and coffee making facilities ",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 160,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Carpeted floors",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 195,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Individually adjustable heating ",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 200,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Safe",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 220,
+                    "facilityGroupCode": 60,
+                    "indLogic": false,
+                    "name": "Living room",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 250,
+                    "facilityGroupCode": 60,
+                    "indYesOrNo": false,
+                    "name": "Wheelchair-accessible",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 260,
+                    "facilityGroupCode": 60,
+                    "indLogic": false,
+                    "name": "Disability-friendly bathroom",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 261,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indYesOrNo": true,
+                    "name": "Wi-fi",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 262,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Wake-up service",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 266,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Turndown service",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 268,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "220V power supply",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 271,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "DVD player",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 275,
+                    "facilityGroupCode": 60,
+                    "indFee": true,
+                    "indLogic": false,
+                    "name": "Extra beds on demand",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 276,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Toiletries",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 279,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Desk",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 280,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Bathrobes",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 286,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Fan",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 287,
+                    "facilityGroupCode": 60,
+                    "indYesOrNo": false,
+                    "name": "Smoking rooms",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 288,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Satellite TV ",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 292,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Plug adaptor",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 300,
+                    "facilityGroupCode": 60,
+                    "indFee": false,
+                    "indLogic": true,
+                    "name": "Housekeeping",
+                    "order": 1,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 295,
+                    "facilityGroupCode": 60,
+                    "indYesOrNo": true,
+                    "name": " Room Size",
+                    "number": 55,
+                    "voucher": false
+                },
+                {
+                    "facilityCode": 298,
+                    "facilityGroupCode": 60,
+                    "indLogic": true,
+                    "name": "Number of bedrooms",
+                    "number": 1,
+                    "voucher": false
+                }
+            ]
+        }
+    ]
+}
