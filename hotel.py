@@ -11,24 +11,14 @@ from hashlib import sha256
 from dotenv import load_dotenv
 from jinja2 import Template
 from db import getAllDataFromDB ,insertQuery ,insertQueryWithRetValue,selectQuery
+from region import getCurrencyInfo ,getPfPaymentId
 
 load_dotenv()
 
-FAST_END_POINT=os.getenv('FAST_END_POINT')
-FAST_API_KEY=os.getenv('FAST_API_KEY')
-HOTEL_ENV=os.getenv('HOTEL_ENV')
 HOST_URL=os.getenv('HOST_URL')
-SECRET_KEY=""
-API_KEY=""
-
-if HOTEL_ENV=="1":
-    API_KEY=os.getenv('HOTEL_DEV_KEY')
-    SECRET_KEY=os.getenv('HOTEL_DEV_SECRET')
-    endPoint=os.getenv('TEST_END_POINT')
-else:
-    API_KEY=os.getenv('HOTEL_LIVE_KEY')
-    SECRET_KEY=os.getenv('HOTEL_LIVE_SECRET')
-    endPoint=os.getenv('LIVE_END_POINT')
+API_KEY=os.getenv('HOTEL_LIVE_KEY')
+SECRET_KEY=os.getenv('HOTEL_LIVE_SECRET')
+endPoint=os.getenv('LIVE_END_POINT')
 
 def getHashCode(params):
     hash=sha256(params.encode('utf-8'))
@@ -67,7 +57,7 @@ def getHotelContent(hotelCodes='1524,54909'):
     return ret_result
     
 def getHotelAvailability(params=None):
-    currencyInfo=getCurrency(params['currency'])
+    currencyInfo=getCurrencyInfo(params['currency'])
     url=endPoint+"/hotel-api/1.0/hotels"
     header={
         "Api-key":API_KEY,
@@ -135,31 +125,6 @@ def getHotelAvailability(params=None):
     }
     return response
 
-def getCurrency(params):
-    select="rate"
-    where=" id = (select max(id) from bank_mark_up )"
-    bank_mark_up=selectQuery(select,'bank_mark_up',where)[0][0]
-    clientC=params
-    hotelC="EUR"
-    portalC="ZAR"
-    header={
-       "accept": "application/json"
-    }
-    url=FAST_END_POINT+"/fetch-multi?api_key="+FAST_API_KEY+"&from="+hotelC+"&to="
-    if portalC==clientC:
-        url+=portalC
-    else:
-        url+=portalC+","+clientC
-    res=requests.get(url,headers=header)
-    temp=json.loads(res.text)
-    result={
-        "client":temp['results'][clientC],
-        "portal":temp['results'][portalC],
-        "update":temp['updated'],
-        "bank_mark_up":bank_mark_up
-    }
-    return result
-
 def getCommentsById(commentId,checkIn):
     url=endPoint+"/hotel-content-api/1.0/types/ratecommentdetails?"
     header={
@@ -204,6 +169,10 @@ def getChangedRateKey(params):
         'hotelCode':params['code']        
     }
     for item in params['reserveData']:
+        if item['rateType']=='RECHECK':
+            result = checkRateKey(item['rateKey'])
+            if result ==False:
+                return False
         if item['rooms'] != item['roomCnt']:
             availParams['rooms']=item['roomCnt']
             availParams['roomCode']=item['roomCode']
@@ -264,7 +233,7 @@ def changeRateKey(params,rateKey,net):
         count+=1
     return shortlist[index]['rateKey']
   
-def checkRateKey(params):
+def checkRateKey(rateKey):
     url=endPoint+"/hotel-api/1.0/checkrates"
     header={
         "Api-key":API_KEY,
@@ -274,16 +243,19 @@ def checkRateKey(params):
         "Content-Type":"application/json"
     }
     data={
-        "rooms": params['rooms']
+        "rooms": [{
+             "rateKey":rateKey
+        }]
     }
     result=requests.post(url, headers=header,json=data)
-  
     json_res=json.loads(result.text)
-    if json_res.get('hotel')!=None:
+    rateInfo=json_res['hotel']['rooms'][0]['rates'][0]
+    if rateInfo['rateType']=='BOOKABLE':
         return True
     else:
         return False
-    
+
+
 def bookHotel(params):
     url=endPoint+"/hotel-api/1.0/bookings"
     header={
@@ -299,28 +271,41 @@ def bookHotel(params):
         "clientReference": "IntegrationAgency",
         "remark": "Booking remarks are to be written here."
     }
-    select=" id"
+    select=" id,rate"
     where=" id = (select max(id) from book_mark_up where type = 1)"
     paymentInfo=params['payment']
-    hotel_mark_up=selectQuery(select,'book_mark_up',where)[0][0]
+    hotel_temp=selectQuery(select,'book_mark_up',where)[0]
+    hotel_mark_up={
+        "id":hotel_temp[0],
+        "rate":hotel_temp[1]
+    }
     where=" id = (select max(id) from bank_mark_up )"
-    bank_mark_up=selectQuery(select,'bank_mark_up',where)[0][0]
-    if hotel_mark_up != paymentInfo['hotel_mark_up']['id']:
-        failedBookingHandler(params['bookInfo'], params['holder'], paymentInfo)
-        res={
-            "success":False,
-            "error":"Price was changed Please check availability again"
-        }
-        return res
-    if bank_mark_up != paymentInfo['bank_mark_up']['id']:
-        failedBookingHandler(params['bookInfo'], params['holder'], paymentInfo)
-        res={
-            "success":False,
-            "error":"Price was changed Please check availability again"
-        }
-        return res
+    bank_temp=selectQuery(select,'bank_mark_up',where)[0]
+    bank_mark_up={
+        "id":bank_temp[0],
+        "rate":bank_temp[1]
+    }
+    pf_id=getPfPaymentId(paymentInfo['uuid'])
+    paymentInfo['pf_id']=pf_id
+    paymentInfo['bank_mark_up']=bank_mark_up
+    paymentInfo['hotel_mark_up']=hotel_mark_up
+    # if hotel_mark_up != paymentInfo['hotel_mark_up']['id']:
+    #     failedBookingHandler(params['bookInfo'], params['holder'], paymentInfo)
+    #     res={
+    #         "success":False,
+    #         "error":"Price was changed Please check availability again"
+    #     }
+    #     return res
+    # if bank_mark_up != paymentInfo['bank_mark_up']['id']:
+    #     failedBookingHandler(params['bookInfo'], params['holder'], paymentInfo)
+    #     res={
+    #         "success":False,
+    #         "error":"Price was changed Please check availability again"
+    #     }
+    #     return res
     result=requests.post(url, headers=header,json=req)
     status=result.status_code
+    
     if int(status) >= 400:
         failedBookingHandler(params['bookInfo'], params['holder'], paymentInfo)
         json_res=json.loads(result.text)
@@ -340,6 +325,7 @@ def bookHotel(params):
     saveBookedHotel(params['holder'],bookingData, paymentInfo,voucher)
     bookingData['voucher']=voucher
     bookingData['c_currency']=paymentInfo['clientCurrency']
+    bookingData['hotelReserve']=params['bookInfo']
     res={
         "success":True,
         "data":bookingData
@@ -382,8 +368,7 @@ def generateVoucherToJson(bookInfo,params,holder,paymentInfo):
     fileName="./"+direcotry
     roomData=[]
     index=0
-    currencyInfo=paymentInfo['currencyInfo']
-    paid_amount=paymentInfo['totalAmount']*(1+paymentInfo['bank_mark_up']['rate']/100)*currencyInfo['client']
+    paid_amount=paymentInfo['totalAmount']*(1+paymentInfo['bank_mark_up']['rate']/100)*paymentInfo['client']
     paid_amount=round(paid_amount,2)
     for item in bookInfo['hotel']['rooms']:
         bookRoom=makeRateData(item['rates'][0])
@@ -430,10 +415,9 @@ def generateVoucherToJson(bookInfo,params,holder,paymentInfo):
     return HOST_URL+direcotry
 
 def failedBookingHandler(params, holder,paymentInfo):
-    currencyInfo=paymentInfo['currencyInfo']
-    now=datetime.datetime.now()
-    fields='type, create_at, status, h_code, indate, outdate, paid_amount, h_currency, c_currency, p_currency ,update_at, hotel_mark_up, bank_mark_up, uuid, c_h_rate, z_h_rate, rate_update_at'
-    values=f" 0 ,'{now}', 4, '{params['code']}', '{params['inDate']}','{params['outDate']}' ,{paymentInfo['totalAmount']}, '{params['currency']}' ,'{paymentInfo['clientCurrency']}', 'ZAR','{now}', {paymentInfo['hotel_mark_up']['id']} , {paymentInfo['bank_mark_up']['id']} ,'{paymentInfo['uuid']}', {currencyInfo['client']}, {currencyInfo['portal']}, '{currencyInfo['update']}'"
+    now=datetime.datetime.utcnow()
+    fields='type, create_at, status, h_code, indate, outdate, paid_amount, h_currency, c_currency, p_currency ,update_at, hotel_mark_up, bank_mark_up, uuid, pf_id,c_h_rate, z_h_rate, rate_update_at'
+    values=f" 0 ,'{now}', 4, '{params['code']}', '{params['inDate']}','{params['outDate']}' ,{paymentInfo['totalAmount']}, 'USD' ,'{paymentInfo['clientCurrency']}', 'ZAR','{now}', {paymentInfo['hotel_mark_up']['id']} , {paymentInfo['bank_mark_up']['id']} ,'{paymentInfo['uuid']}', '{paymentInfo['pf_id']}', {paymentInfo['client']}, {paymentInfo['portal']}, '{paymentInfo['update']}'"
     fields+=' , hd_surname, hd_name, hd_email, hd_phone'
     values+=f" , '{holder['name']}', '{holder['surname']}' , '{holder['email']}' , '{holder['phone']}'"
     holder_id=holder.get('id')
@@ -449,7 +433,6 @@ def changeBoolean(value):
         return 0
 
 def saveBookedHotel(holder,booking, paymentInfo,voucher):
-    currencyInfo=paymentInfo['currencyInfo']
     room_data=saveBookedRoom(booking['hotel']['rooms'],booking['reference'])
     room_ids=room_data['roomIds']
     totalAmount=0
@@ -458,10 +441,10 @@ def saveBookedHotel(holder,booking, paymentInfo,voucher):
     else:
         totalAmount=booking['totalNet']
     profit=paymentInfo['totalAmount']-(totalAmount) 
-    now=datetime.datetime.now()
+    now=datetime.datetime.utcnow()
     formatTime=now.strftime('%Y-%m-%d %H:%M:%S')
-    fields=' reference, cancellation, modification, type, voucher, create_at, status, h_code, indate, outdate, room_data, pending_amount, net_amount, paid_amount,  profit_amount,h_currency, invoice_company, invoice_number,update_at, hotel_mark_up, supply_name, supply_ref, uuid,c_h_rate, z_h_rate, rate_update_at, bank_mark_up, c_currency, p_currency'
-    values=f" '{booking['reference']}', {changeBoolean( booking['modificationPolicies']['cancellation'])}, {changeBoolean(booking['modificationPolicies']['modification']) },1 , '{voucher}', '{now}', {getStatus(booking['status'])}, '{booking['hotel']['code']}', '{booking['hotel']['checkIn']}', '{booking['hotel']['checkOut']}', '{room_ids}',{booking['pendingAmount']} ,{totalAmount}, {paymentInfo['totalAmount']}, {profit},'{booking['currency']}', '{booking['invoiceCompany']['company']}', '{booking['invoiceCompany']['registrationNumber']}', '{formatTime}', {paymentInfo['hotel_mark_up']['id']}, '{booking['hotel']['supplier']['name']}', '{booking['hotel']['supplier']['vatNumber']}', '{paymentInfo['uuid']}',{currencyInfo['client']}, {currencyInfo['portal']}, '{currencyInfo['update']}', {paymentInfo['bank_mark_up']['id']}, '{paymentInfo['clientCurrency']}', 'ZAR'"
+    fields=' reference, cancellation, modification, type, voucher, create_at, status, h_code, indate, outdate, room_data, pending_amount, net_amount, paid_amount,  profit_amount,h_currency, invoice_company, invoice_number,update_at, hotel_mark_up, supply_name, supply_ref, uuid, pf_id ,c_h_rate, z_h_rate, rate_update_at, bank_mark_up, c_currency, p_currency'
+    values=f" '{booking['reference']}', {changeBoolean( booking['modificationPolicies']['cancellation'])}, {changeBoolean(booking['modificationPolicies']['modification']) },1 , '{voucher}', '{now}', {getStatus(booking['status'])}, '{booking['hotel']['code']}', '{booking['hotel']['checkIn']}', '{booking['hotel']['checkOut']}', '{room_ids}',{booking['pendingAmount']} ,{totalAmount}, {paymentInfo['totalAmount']}, {profit},'{booking['currency']}', '{booking['invoiceCompany']['company']}', '{booking['invoiceCompany']['registrationNumber']}', '{formatTime}', {paymentInfo['hotel_mark_up']['id']}, '{booking['hotel']['supplier']['name']}', '{booking['hotel']['supplier']['vatNumber']}', '{paymentInfo['uuid']}' , '{paymentInfo['pf_id']}',{paymentInfo['client']}, {paymentInfo['portal']}, '{paymentInfo['update']}', {paymentInfo['bank_mark_up']['id']}, '{paymentInfo['clientCurrency']}', 'ZAR'"
     fields+=' , hd_surname, hd_name, hd_email, hd_phone'
     values+=f" , '{holder['name']}', '{holder['surname']}' , '{holder['email']}' , '{holder['phone']}'"
     holder_id=holder.get('id')
@@ -490,7 +473,7 @@ def saveBookedRoom(roomData,bookingId):
         tax=0
         net=0
         total=0
-        now=datetime.datetime.now()
+        now=datetime.datetime.utcnow()
         formatTime=now.strftime('%Y-%m-%d %H:%M:%S')
         curRate=room['rates'][0]
         net=float(curRate['net']) 

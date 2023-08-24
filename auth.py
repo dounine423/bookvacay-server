@@ -1,5 +1,4 @@
 import random
-import math
 import smtplib
 import os
 import datetime
@@ -8,7 +7,8 @@ from dotenv import load_dotenv
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from db import  InsertData ,selectQuery,updateQuery,insertQuery
-from bs4 import BeautifulSoup
+from jinja2 import Template
+from region import getRegion
 
 load_dotenv()
 
@@ -25,29 +25,28 @@ def passwordHash(password):
     return hash.hexdigest()[0:20]
 
 def random6Digest():
-    rand=random.random()
-    rand=rand*math.pow(10,6)
-    rand=int(rand)
-    return rand
+    random_number=random.randint(100000,999999)
+    return str(random_number) 
 
 def login(params):
     email=params['email']
     password=passwordHash(params['password'])
+    select=" id, surname, name, country, zipcode, address, email, phone, avatar, type, email_verify, status, password"
     where=f" email = '{email}'"
-    user=selectQuery("*","user",where)
+    user=selectQuery(select,"user",where)
     if len(user) ==0:
         print("user does not exist")
         return 1
-    # if user[0][8]==0:
-    #     print("email verification needed")
-    #     return 2
-    # if user[0][10]==0:
-    #     print("first email verification needed")
-    #     return 2
-    # if user[0][10]==2:
-    #     print("your acc has been blocked")
-    #     return 3
-    if user[0][10]!=password:
+    if user[0][10]==0:
+        print("email verification needed")
+        return 2
+    if user[0][11]==0:
+        print("complete verification")
+        return 2
+    if user[0][11]==2:
+        print("your acc has been blocked")
+        return 3
+    if user[0][12]!=password:
         return 4
     else:
         userData={
@@ -59,40 +58,54 @@ def login(params):
             "address":user[0][5],
             "email":user[0][6],
             "phone":user[0][7],
-            "avatar":user[0][11],
-            "type":user[0][12]
+            "avatar":user[0][8],
+            "type":user[0][9]
         }
-        if int(user[0][12])  == 1:
+        if int(user[0][9])  == 1:
             userData['hotelEnv']=HOTEL_ENV
             userData['activityEnv']=ACTIVITY_ENV
 
-        return userData
+        region=getRegion()
+        res={
+            "region":region,
+            "userData":userData
+        }
+        return res
 
 def register(params):
     email=params['email']
     password=passwordHash(params['password'])
-    formatedTime=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    formatedTime=datetime.datetime.utcnow()
     if checkDuplicate(email) == True:
         rand=random6Digest()
-        fields=" email , password, type, create_at, update_at ,email_code "
-        values=f" '{email}', '{password}', 2, '{formatedTime}', '{formatedTime}', {rand}"
+        fields=" email , password, type, create_at, update_at ,email_code, status, email_verify "
+        values=f" '{email}', '{password}', 2, '{formatedTime}', '{formatedTime}', {rand}, 0, 0"
         insertQuery('user',fields,values)
-        sendEmail(email,rand)
-        return rand
+        sendEmail(email,rand,0)
+        return True
     else:
         return False
 
-def verifyUser(email,code):
+def verifyCode(params):
+    type=int( params['type'])
+    code=params['code']
+    email=params['email']
     flag=checkCode(code,email)
     if flag==True:
-        where=f" email = '{email}'"
-        update=" email_verify = 1 , status = 1"
-        updateQuery('user',update,where)
+        if type ==0:
+            verifyUser(email)
+        # elif type ==1:
+        #     resetPwd(email)
     return flag
-    
+
+def verifyUser(email):
+    where=f" email = '{email}'"
+    update=" email_verify = 1 , status = 1"
+    updateQuery('user',update,where)
+
 def checkCode(code,email):
     where=f" email = '{email}'"
-    user=selectQuery('verify_code','user',where)
+    user=selectQuery('email_code','user',where)
     if code == user[0][0]:
         return True
     else:
@@ -108,26 +121,30 @@ def checkDuplicate(email):
 
 def resendVerifyCode(params):
     email=params['email']
+    type=int(params['type']) 
     code=random6Digest()
-    sendEmail(email,code)
-    return code
+    where=f" email='{email}'"
+    update=f" email_code = '{code}'"
+    updateQuery('user',update,where)
+    sendEmail(email,code,type)
+    return True
 
-def sendEmail(email="dounine423@gmail.com",code=123456):
+def sendEmail(email,code,type):
     msg=MIMEMultipart()
     msg['Subject']="Verify Email"
-    msg['From']=SMTP_SERVER
+    msg['From']=SERVER_USER
     msg['to']=email
-    with open('mail.html') as f:
-        html=f.read()
-    mailData=BeautifulSoup(html,'html.parser')
-    name_td= mailData.find('td',{'id':'user-name'})
-    name_td.string=f"Hi "
-    code_td=mailData.find('div',{'id':'verify-code'})
-    code_td.string=str(code)
-    print(mailData)
-    msg.attach(MIMEText(mailData,'html'))
+    fileName="./static/mail/"
+    if type==0:
+        fileName+="2fa.html"
+    elif type==1:
+        fileName+="forgot.html"
+    with open(fileName) as f:
+            html_template=Template(f.read())
+    html=html_template.render(code=code)
+    msg.attach(MIMEText(html,'html'))
     try:
-        smtp=smtplib.SMTP_SSL(SMTP_SERVER,SMTP_PORT)
+        smtp=smtplib.SMTP_SSL('localhost',SMTP_PORT)
         smtp.ehlo()
         smtp.login(SERVER_USER,SERVER_PASSWORD)
         smtp.sendmail(SERVER_USER,email,msg.as_string())
@@ -136,7 +153,7 @@ def sendEmail(email="dounine423@gmail.com",code=123456):
         return "Something went wrong"
 
 def modifiyUserInfo(params,file):
-    now=datetime.datetime.now()
+    now=datetime.datetime.utcnow()
     update=f" surname = '{params['surname']}', name = '{params['name']}', country = '{params['country']}', zipcode = '{params['zipcode']}', address = '{params['address']}', phone= '{params['phone']}' ,  update_at = '{now}'"
     if file!=None:
         update+=f" , avatar = '{HOST_URL+ file}'"
@@ -168,18 +185,47 @@ def changePwd(params):
     else:
         return False
 
+def forgotPwd(params):
+    email=params['email']
+    where=f" email = '{email}'"
+    result= selectQuery('email','user',where)
+    if len(result)==0:
+        return False
+    else:
+        code=random6Digest()
+        where=f" email = '{email}'"
+        update= f" email_code = '{code}'"
+        updateQuery('user',update,where)
+        sendEmail(email,code,1)
+        return True
+
+def resetPwd(params):
+    email=params['email']
+    pwd=params['pwd']
+    code=params['code']
+    where=f" email = '{email}'"
+    select=" email_code"
+    try:
+        email_code=selectQuery(select,'user',where)[0][0]
+        if email_code == code:
+            hashPwd=passwordHash(pwd)
+            update=f" password = '{hashPwd}' "
+            updateQuery('user',update,where)
+            return True
+        else:
+            return False
+    except Exception as e:
+        return False
+    
+    
+   
+
 def main():
-    request={
-        "surname":"kristen",
-        "lastname":"kropf",
-        "country":"ES",
-        "zipcode":"12345",
-        "address":"willington",
-        "email":"dounine423@gmail.com",
-        "phone":"1232222",
-        "password":"12345678"
-    }
-    sendEmail()
+     params={
+         "code":"333044",
+         "email":"dounine423@gmail.com"
+     }
+     resetPwd(params)
 
 if __name__ == "__main__":
     main()

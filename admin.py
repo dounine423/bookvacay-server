@@ -1,7 +1,7 @@
 import datetime
+
 import os
 import time
-import requests
 import math
 import csv
 from hashlib import sha256
@@ -47,8 +47,7 @@ def getStatisticByAdmin(params):
     if type == 1:
         table_from=" hotel_book "
     else:
-        # activity book
-        table_from=" hotel_book "
+        table_from=" activity_book "
     if group ==1:
         select+=" ,DATE_FORMAT(create_at, '%Y-%m-%d %H:00:00') "
         date=date['year']+"-"+date['month']+"-"+date['day']
@@ -66,7 +65,6 @@ def getStatisticByAdmin(params):
         groupBy=" DATE_FORMAT(create_at, '%Y-%m') "
     elif group == 4:
         select+=" ,DATE_FORMAT(create_at, '%Y-%m') "
-
         groupBy=" DATE_FORMAT(create_at, '%Y-%m') "
 
     tempResult=selectQuery(select,table_from,where,groupBy,'ASC',None,None,groupBy) 
@@ -83,7 +81,7 @@ def getHotelDataByAdmin(params):
     status=int(params['status'])
     offset=int(params['offset'])
     limit=int(params['limit'])
-    select=" A.id, A.type, A.create_at, A.reference, A.status, A.cancellation, A.modification, B.name, D.content, A.indate, A.outDate, A.pending_amount, A.paid_amount, A.net_amount, A.profit_amount, A.h_currency, A.c_currency, A.p_currency, A.invoice_company, A.invoice_number, A.supply_name, A.supply_ref, C.rate, E.rate, A.z_h_rate, A.c_h_rate, A.rate_update_at, A.uuid, A.voucher, A.room_data, A.update_at, A.hd_id, A.hd_name, A.hd_surname, A.hd_email, A.hd_phone "
+    select=" A.id, A.type, A.create_at, A.reference, A.status, A.cancellation, A.modification, B.name, D.content, A.indate, A.outDate, A.pending_amount, A.paid_amount, A.net_amount, A.profit_amount, A.h_currency, A.c_currency, A.p_currency, A.invoice_company, A.invoice_number, A.supply_name, A.supply_ref, C.rate, E.rate, A.z_h_rate, A.c_h_rate, A.rate_update_at, A.uuid, A.voucher, A.room_data, A.update_at, A.hd_id, A.hd_name, A.hd_surname, A.hd_email, A.hd_phone, A.pf_id "
     table_from=" ( hotel_book A, hotel_list B, book_mark_up C, destination D, bank_mark_up E) "
     where=" A.h_code = B.code and A.hotel_mark_up = C.id and D.code = B.destination and E.id = A.bank_mark_up"
     if status != 0:
@@ -160,7 +158,8 @@ def getHotelDataByAdmin(params):
             "holder_id":item[31],
             "holder_name":item[32]+" "+item[33],
             "holder_email":item[34],
-            "holder_phone":item[35]
+            "holder_phone":item[35],
+            "pf_id":item[36]
         }
         bookList.append(data)
     result={
@@ -172,18 +171,19 @@ def getHotelDataByAdmin(params):
 def getPaymentInfo():
     select=" sum( profit_amount * z_h_rate)"
     hotel=selectQuery(select,'hotel_book')
-    # activity=selectQuery(select,'activity_book')
+    activity=selectQuery(select,'activity_book')
     totalHotel=0
     totalActivity=0
     if hotel[0][0]!=None:
         totalHotel=round(hotel[0][0],2)
-    # if activity[0][0] !=None:
-    #     totalActivity=round(activity[0][0],2)
+    if activity[0][0] !=None:
+        totalActivity=round(activity[0][0],2)
     paymentInfo={
         "hotel":totalHotel,
         "activity":totalActivity,
         "currency":"ZAR"
     }
+    print(paymentInfo)
     return paymentInfo
 
 def getBookMarkUp(params):
@@ -209,8 +209,8 @@ def markUpListToArray(listData):
             "id":item[0],
             "rate":item[1],
             "comment":item[2],
-            "create":item[3],
-            "update":item[4],
+            "create":str(item[3]) ,
+            "update":str(item[4]) ,
             "type":item[5]
         }
         result.append(data)
@@ -220,10 +220,10 @@ def insertBookMarkUp(params):
     type=params['type']
     rate=params['rate']
     comment=params['comment']
-    now=datetime.datetime.now()
+    now=datetime.datetime.utcnow()
     fields=" rate, comment, create_at, update_at, type"
     values=f" {rate}, '{comment}', '{now}', '{now}', {type}"
-    insertQuery('hotel_mark_up',fields,values)
+    insertQuery('book_mark_up',fields,values)
     where={
         "type":0,
         "limit":5,
@@ -235,11 +235,11 @@ def insertBookMarkUp(params):
     
 def getActivityDataByAdmin(params):
     status=int(params['status']) 
-    limit=params['limit']
-    offset=params['offset']
-    select=" A.id, A.reference, A.status, A.paid_amount, A.pending_amount, A.total_amount, A.profit_amount, A.currency, A.invoice_company, A.invoice_number, A.activities, A.h_id, A.h_name, A.h_surname, A.h_email, A.h_phone, A.h_address, A.h_zipcode, A.create_at, A.update_at, A.voucher, A.type , B.rate"
-    table_from=" activity_book A, tolerance B"
-    where=" A.tolerance = B.id "
+    limit=int(params['limit']) 
+    offset=int(params['offset']) 
+    select=" A.id, A.create_at, A.type, A.reference, A.status, A.paid_amount, A.total_amount, A.profit_amount, A.h_currency, A.c_currency, A.p_currency, A.invoice_company, A.invoice_number, B.rate, C.rate, A.uuid, A.pf_id, A.c_h_rate, A.z_h_rate, A.rate_update_at,  A.activities, A.voucher, A.h_id, A.h_name, A.h_surname, A.h_email, A.h_phone, A.h_address, A.h_zipcode, A.update_at"
+    table_from=" activity_book A, book_mark_up B, bank_mark_up C"
+    where=" A.book_mark_up = B.id  and A.bank_mark_up = C.id "
     if status >0:
         where +=f" and A.status = {status}"
     if params.get('duration') !=None:
@@ -250,11 +250,11 @@ def getActivityDataByAdmin(params):
     tempList=[]
     for item in tempData:
         activities=[]
-        if item[10] !=None:
+        if item[20] !=None:
             select='C.*'
             table_from=" (select A.*, B.content  from activity_modality A, destination B where A.destination = B.code ) C"
             where=""
-            ids=item[10].split(',')
+            ids=item[20].split(',')
             for id in ids:
                 where+=f" C.id = {id} or"
             where=where[0:(len(where)-2)]
@@ -280,29 +280,37 @@ def getActivityDataByAdmin(params):
                     "destination":activity[21]
                 }
                 activities.append(activityData)
+
         data={
             "id":item[0],
-            "reference":item[1],
-            "status":item[2],
-            "paid_amount":item[3],
-            "pending_amount":item[4],
-            "total_amount":item[5],
-            "profit_amount":item[6],
-            "currency":item[7],
-            "invoice_company":item[8],
-            "invoice_vat":item[9],
+            "create_at":str(item[1]) ,
+            "type":item[2],
+            "reference":item[3],
+            "status":item[4],
+            "paid_amount":item[5],
+            "total_amount":item[6],
+            "profit_amount":item[7],
+            "h_currency":item[8],
+            "c_currency":item[9],
+            "p_currency":item[10],
+            "invoice_company":item[11],
+            "invoice_vat":item[12],
+            "book_mark_up":item[13],
+            "bank_mark_up":item[14],
+            "uuid":item[15],
+            "pf_id":item[16],
+            "c_h_rate":item[17],
+            "z_h_rate":item[18],
+            "rate_update": str(item[19]),
             "activities":activities,
-            "holder_id":item[11],
-            "holder_name":item[12]+" " +item[13],
-            "holder_email":item[14],
-            "holder_phone":item[15],
-            "holder_address":item[16],
-            "holder_zipcode":item[17],
-            "create_at":str(item[18]) ,
-            "update_at":str(item[19]),
-            "voucher":item[20],
-            "type":item[21],
-            "markup":item[22]
+            "voucher":item[21],
+            "holder_id":item[22],
+            "holder_name":item[23]+" " +item[24],
+            "holder_email":item[25],
+            "holder_phone":item[26],
+            "holder_address":item[27],
+            "holder_zipcode":item[28],
+            "update_at":str(item[29])
         }
         tempList.append(data)
     result={
@@ -314,7 +322,7 @@ def getActivityDataByAdmin(params):
 def hotelCancellationByAdmin(params):
     book_id=params['book_id']
     where=f" id = {book_id}"
-    now=datetime.datetime.now()
+    now=datetime.datetime.utcnow()
     update=f" status = 5, update_at= '{now}'"
     updateQuery('hotel_book',update,where)
     params={
@@ -332,7 +340,7 @@ def hotelCancellationByAdmin(params):
 def activityCancellationByAdmin(params):
     book_id=params['book_id']
     where=f" id = {book_id}"
-    now=datetime.datetime.now()
+    now=datetime.datetime.utcnow() 
     update=f" status = 5, update_at= '{now}'"
     updateQuery('activity_book',update,where)
     params={
@@ -384,7 +392,7 @@ def type2Str(param):
         return "Failed"
 
 def getHotelBookCSVData():
-    select=" A.id, A.type, A.create_at, A.reference, A.status, A.cancellation, A.modification, B.name, D.content, A.indate, A.outDate, A.pending_amount, A.paid_amount, A.net_amount, A.profit_amount, A.h_currency, A.c_currency, A.p_currency, A.invoice_company, A.invoice_number, A.supply_name, A.supply_ref, C.rate, E.rate, A.z_h_rate, A.c_h_rate, A.rate_update_at, A.uuid, A.voucher, A.room_data, A.update_at, A.hd_id, A.hd_name, A.hd_surname, A.hd_email, A.hd_phone "
+    select=" A.id, A.type, A.create_at, A.reference, A.status, A.cancellation, A.modification, B.name, D.content, A.indate, A.outDate, A.pending_amount, A.paid_amount, A.net_amount, A.profit_amount, A.h_currency, A.c_currency, A.p_currency, A.invoice_company, A.invoice_number, A.supply_name, A.supply_ref, C.rate, E.rate, A.z_h_rate, A.c_h_rate, A.rate_update_at, A.uuid, A.voucher, A.room_data, A.update_at, A.hd_id, A.hd_name, A.hd_surname, A.hd_email, A.hd_phone ,A.pf_id"
     table_from=" ( hotel_book A, hotel_list B, book_mark_up C, destination D, bank_mark_up E) "
     where=" A.h_code = B.code and A.hotel_mark_up = C.id and D.code = B.destination and E.id = A.bank_mark_up"
     hotelBookedData=selectQuery(select,table_from,where,'A.type','DESC')
@@ -410,7 +418,7 @@ def getHotelBookCSVData():
             "Billing-Rate": str(item[23]) +" "+"%",
             "Rate1":(item[15]+"-"+item[16]+" "+str(item[25])) ,
             "Rate2":(item[15]+"-"+item[17]+" "+str(item[24])),
-            "GUID":item[27],
+            "GUID":item[36],
             "HolderName":item[32]+ " " +item[33],
             "HolderEmail":item[34],
             "HolderPhone":item[35],
@@ -441,59 +449,89 @@ def getActivityBookCSVByAdmin():
     fileName="static/csv/"+passwordHash(str(datetime.datetime.now()))+"activity.csv"
     with open("./"+fileName,'w+') as f:
         writer=csv.writer(f)
-        writer.writerow(['Reference','Total','Net','Profit','Invoice Company','Invoice Registration Number','HolderName','HolderEmail','HolderPhone','HolderAddress','HolderZipCode','MarkUp','Create At'])
+        fields=[]
+        for item in result[0]:
+            fields.append(item)
+        writer.writerow(fields)
         for item in result:
-            writer.writerow([item['reference'],item['paid_amount'],item['total_amount'],item['profit_amount'],item['invoice_company'],item['invoice_vat'],item['holder_name'],item['holder_email'],item['holder_phone'],item['holder_address'],item['holder_zipcode'],item['markup'],item['create_at']])
+            values=[]
+            for index in fields:
+                if item.get(index)!=None:
+                    values.append(item[index])
+                else:
+                    values.append("")
+            writer.writerow(values)
     return "./"+fileName
 
 def getActivityBookCSVData():
-    select=" A.id, A.reference, A.status, A.paid_amount, A.pending_amount, A.total_amount, A.profit_amount, A.currency, A.invoice_company, A.invoice_number, A.activities, A.h_id, A.h_name, A.h_surname, A.h_email, A.h_phone, A.h_address, A.h_zipcode, A.create_at, A.update_at, A.voucher, A.type , B.rate"
-    table_from=" activity_book A, tolerance B"
-    where=" A.tolerance = B.id "
+    select=" A.type, A.create_at,  A.reference, A.status, A.paid_amount, A.total_amount, A.profit_amount, A.h_currency, A.c_currency, A.p_currency, A.invoice_company, A.invoice_number, B.rate, C.rate, A.uuid, A.pf_id, A.c_h_rate, A.z_h_rate, A.rate_update_at,  A.activities, A.voucher, A.h_id, A.h_name, A.h_surname, A.h_email, A.h_phone, A.h_address, A.h_zipcode, A.update_at"
+    table_from=" activity_book A, book_mark_up B, bank_mark_up C"
+    where=" A.book_mark_up = B.id  and A.bank_mark_up = C.id "
     tempData=selectQuery(select,table_from,where,'A.create_at','DESC')
     tempList=[]
     for item in tempData:
         data={
-            "id":item[0],
-            "reference":item[1],
-            "status":statusCode2Str(item[2]),
-            "paid_amount":item[7]+" " +str(item[3]) ,
-            "pending_amount":item[7]+" "+ str(item[4]) ,
-            "total_amount":item[7]+" "+ str(item[5]) ,
-            "profit_amount":item[7]+" "+ str(item[6]) ,
-            "invoice_company":item[8],
-            "invoice_vat":item[9],
-            # "activities":activities,
-            # "holder_id":item[11],
-            "holder_name":item[12]+" " +item[13],
-            "holder_email":item[14],
-            "holder_phone":item[15],
-            "holder_address":item[16],
-            "holder_zipcode":item[17],
-            "create_at":str(item[18]) ,
-            "update_at":str(item[19]),
-            # "voucher":item[20],
-            # "type":item[21],
-            "markup":str(item[22]) +" %" 
+            "Type":type2Str(item[0]),
+            "CreateAt":item[1],
+            "Reference":item[2],
+            "status":statusCode2Str(item[3]),
+            "Invoice-Company":item[10],
+            "Invoice-Registration-Number":item[11],
+            "Booking-MarkUp":str(item[12])+" %" ,
+            "Billing-Rate":str(item[13])+" %" ,
+            "Rate1":(item[8]+"-"+item[7]+" "+str(item[16])),
+            "Rate2":(item[9]+"-"+item[7]+" "+str(item[17])),
+            "GUID":item[15],
+            "HolderName":item[22]+" " +item[23],
+            "HolderEmail":item[24],
+            "HolderPhone":item[25],
+            "HolderAddress":item[26],
+            "HolderZipcode":item[27],
+            "Total":item[8] +" "+str(item[4])
         }
+        if item[5] !=None:
+            data['Net']=item[7] +" "+str(item[5])
+        if item[6] !=None:
+            data['Profit']=item[9] +" "+str(item[6])
         tempList.append(data)
     return tempList
 
+def getAllBillRateByAdmin(params):
+    limit=int(params['limit']) 
+    offset=int(params['offset']) 
+    total=selectQuery('count(id)','bank_mark_up')[0][0]
+    tempResult= selectQuery('*','bank_mark_up',None,'create_at','DESC',limit,offset)
+    result=[]
+    for item in tempResult:
+        data={
+            "id":item[0],
+            "rate":item[1],
+            "comment":item[2],
+            "create_at":str(item[3]) 
+        }
+        result.append(data)
+    res={
+        "total":total,
+        "result":result
+    }
+    return res
+
+def insertNewBillRateByAdmin(params):
+    rate=float(params['rate'])
+    comment=params['comment']
+    now=datetime.datetime.utcnow()
+    field=f" rate, comment, create_at"
+    value=f" {rate},'{comment}','{now}'"
+    insertQuery('bank_mark_up',field,value)
+    where={
+        "limit":5,
+        "offset":0
+    }
+    result=getAllBillRateByAdmin(where)
+    return result
+
 def main():
-    params={
-        "limit":4,
-        "status":0,
-        "offset":0,
-        "keyword":""
-    }
-    params={
-        "group":1,
-        "type":1,
-        "date":{"year":'2023',"month":"08","day":"06"}
-    }
-    result= getHotelBookCSVByAdmin()
-    # print(result)
-    
+    print(datetime.datetime.now())
 
 if __name__ == "__main__":
     main()

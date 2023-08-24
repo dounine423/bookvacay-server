@@ -4,12 +4,12 @@ from flask import *
 from flask_cors import CORS
 from hashlib import sha256
 from datetime import timedelta
-from activity import getAvailActivities ,bookActivity,getActivityDetail,searchActivityByHotelCode,getActivityVoucher
-from hotel import getHotelContent ,getHotelAvailability,getChangedRateKey,checkRateKey,bookHotel,getFilteredCode,getRoomRateComment,getHotelVoucher,getCurrency
-from auth import register,verifyUser,login,resendVerifyCode ,modifiyUserInfo,changePwd, sendEmail
-from admin import getHotelDataByAdmin,getStatisticByAdmin,getPaymentInfo,getBookMarkUp,insertBookMarkUp,getActivityDataByAdmin,hotelCancellationByAdmin,activityCancellationByAdmin,changeEnvByAdmin,getCSVFileByAdmin,getHotelBookCSVByAdmin,getActivityBookCSVByAdmin
-from user import getHotelBookedDataByUser,hotelBookingCancelHandlerByUser,getActivityBookedDataByUser,activityBookingCancelHandlerByUser
-from region import getRegion
+from activity import getAvailActivities ,bookActivity,getActivityDetail,getActivityVoucher
+from hotel import getHotelContent ,getHotelAvailability,getChangedRateKey,bookHotel,getFilteredCode,getRoomRateComment,getHotelVoucher
+from auth import register,verifyCode,login,resendVerifyCode ,modifiyUserInfo,changePwd, sendEmail,forgotPwd,resetPwd
+from admin import getHotelDataByAdmin,getStatisticByAdmin,getPaymentInfo,getBookMarkUp,insertBookMarkUp,getActivityDataByAdmin,hotelCancellationByAdmin,activityCancellationByAdmin,getAllBillRateByAdmin,insertNewBillRateByAdmin,changeEnvByAdmin,getCSVFileByAdmin,getHotelBookCSVByAdmin,getActivityBookCSVByAdmin
+from user import getHotelBookedDataByUser,hotelBookingCancelHandlerByUser,getActivityBookedDataByUser,activityBookingCancelHandlerByUser,bookingAllByUser
+from region import getRegion,getCurrencyInfo
 
 
 app = Flask(__name__,
@@ -31,13 +31,13 @@ def makeLogin():
     params = json.loads(request.data)
     result=login(params)
     if result==1:
-        return jsonify({"success":False,"message":"User does not exist"})
+        return jsonify({"success":False,"message":"User does not exist","code":1})
     if result==2:
-        return jsonify({"success":False,"message":"Please complete the verfication"})
+        return jsonify({"success":False,"message":"Please complete verfication","code":2})
     if result==3:
-        return jsonify({"success":False,"message":"Account is blocked"})
+        return jsonify({"success":False,"message":"Account is blocked","code":3})
     if result ==4:
-        return jsonify({"success":False,"message":"Password does not match email"})
+        return jsonify({"success":False,"message":"Password does not match email","code":4})
     else:
         return jsonify({"success":True,"result":result})
     
@@ -48,18 +48,18 @@ def makeRegister():
     if result==False:
         return jsonify({"success":False,"message":"Email was registered already"})
     else:
-        return jsonify({"success":True,"result":result})
+        return jsonify({"success":True,"message":"Successfully registered. Verify your email"})
  
 @app.route('/resendVerifyCode',methods=['POST'])
 def makeResendVerifyCode():
     params=json.loads(request.data)
     result=resendVerifyCode(params)
-    return jsonify({"success":True,"result":result})
+    return jsonify({"success":True,"result":"Success"})
 
 @app.route('/veriycode',methods=['POST'])
 def makeVerifyCode():
     params=json.loads(request.data)
-    result=verifyUser(params['email'],params['verifycode'])
+    result=verifyCode(params)
     if result==True:
         return jsonify({"success":True,"result":"Email verification is successed"})
     else:
@@ -93,6 +93,31 @@ def makeChangePwd():
     except Exception as e:
         return jsonify({"success":False,'message':str(e)})
 
+@app.route('/forgotPwd',methods=['POST'])
+def makeForgotPwd():
+    try:
+        params=json.loads(request.data)
+        result=forgotPwd(params)
+        if result ==True:
+            return jsonify({'success':True,'message':"Password changed successfully"})
+        else:
+            return jsonify({'success':False,'message':"Unregistered Email"})
+    except Exception as e:
+        return jsonify({"success":False,'message':str(e)})
+
+@app.route('/resetPwd',methods=['POST'])
+def makeResetPwd():
+    try:
+        params=json.loads(request.data)
+        result=resetPwd(params)
+        if result ==True:
+            return jsonify({'success':True,'message':"Password changed successfully"})
+        else:
+            return jsonify({'success':False,'message':"Something went wrong"})
+    except Exception as e:
+        return jsonify({"success":False,'message':str(e)})
+
+
 @app.route('/getRegion',methods=['GET'])
 def makeRegionResponse():
     try:
@@ -106,15 +131,6 @@ def makeGetActivities():
     params=json.loads(request.data)
     try:
         result = getAvailActivities(params)
-        return jsonify({'success':True,'result':result})
-    except Exception as e:
-        return jsonify({'success':False ,'message':str(e)})
-
-@app.route('/searchActivityByHotelCode',methods=['POST'])
-def makeSearchActivityByHotelCode():
-    params=json.loads(request.data)
-    try:
-        result = searchActivityByHotelCode(params)
         return jsonify({'success':True,'result':result})
     except Exception as e:
         return jsonify({'success':False ,'message':str(e)})
@@ -160,16 +176,10 @@ def makeRateKey():
     params=json.loads(request.data)
     try:
         result=getChangedRateKey(params)
-        return jsonify({'success':True,'result':result})
-    except Exception as e:
-        return jsonify({'success':False,'message':str(e)})
-    
-@app.route('/checkRateKey',methods=['POST'])
-def makeCheckRateKey():
-    params=json.loads(request.data)
-    try:
-        result =checkRateKey(params)
-        return jsonify({'success':True,'result':result})
+        if result ==False:
+            return jsonify({'success':False,'message':'Please change room','code':1})
+        else:
+            return jsonify({'success':True,'result':result})
     except Exception as e:
         return jsonify({'success':False,'message':str(e)})
     
@@ -204,7 +214,7 @@ def makeRoomRateComment():
 def makeGetCurrentCurrency():
     try:
         params=json.loads(request.data)
-        result=getCurrency(params)
+        result=getCurrencyInfo(params)
         return jsonify({'success':True,'result':result})
     except Exception as e:
         return jsonify({"success":False,'message':str(e)})
@@ -301,6 +311,33 @@ def makeGetActivityBookCSVByAdmin():
     except Exception as e:
         return jsonify({"success":False,'message':str(e)})
 
+@app.route('/getBillRateListByAdmin',methods=['POST'])
+def makeGetBillRateListByAdmin():
+    try:
+        params=json.loads(request.data)
+        result=getAllBillRateByAdmin(params)
+        return  jsonify({"success":True,'result':result})
+    except Exception as e:
+        return jsonify({"success":False,'message':str(e)})
+
+@app.route('/insertBillRateByAdmin',methods=['POST'])
+def makeInsertBillRateByAdmin():
+    try:
+        params=json.loads(request.data)
+        result=insertNewBillRateByAdmin(params)
+        return  jsonify({"success":True,'result':result})
+    except Exception as e:
+        return jsonify({"success":False,'message':str(e)})
+
+@app.route('/bookingAllByUser',methods=['POST'])
+def makeBookingAllByUser():
+    try:
+        params=json.loads(request.data)
+        result=bookingAllByUser(params)
+        return  jsonify({"success":True,'result':result})
+    except Exception as e:
+        return jsonify({"success":False,'message':str(e)})
+
 @app.route('/getHotelDataByUser',methods=['POST'])
 def makeGetHotelDataByUser():
     try:
@@ -394,5 +431,5 @@ def makeTest():
 
 
 if __name__ == "__main__":
+    # app.run(ssl_context='adhoc',host="0.0.0.0",port=5000,debug=True)
     app.run(host="0.0.0.0",port=5000,debug=True)
-

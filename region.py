@@ -1,4 +1,17 @@
+import os
+import json
+import requests
+import hashlib
+import urllib.parse
 from  db import selectQuery
+from dotenv import load_dotenv
+from datetime import datetime
+
+load_dotenv()
+
+FAST_END_POINT=os.getenv('FAST_END_POINT')
+FAST_API_KEY=os.getenv('FAST_API_KEY')
+PAYFAST_END_POINT=os.getenv('PAYFAST_END_POINT')
 
 def getCountries():
     select =" country_id , name ,iso2 ,phonecode ,currency"
@@ -29,6 +42,32 @@ def getDestinations():
         }
         result.append(data)
     return result
+
+def getCurrencyInfo(params):
+    select="id,rate"
+    where=" id = (select max(id) from bank_mark_up )"
+    bank_mark_up=selectQuery(select,'bank_mark_up',where)[0][0]
+    clientC=params
+    hotelC="USD"
+    portalC="ZAR"
+    header={
+       "accept": "application/json"
+    }
+    url=FAST_END_POINT+"/fetch-multi?api_key="+FAST_API_KEY+"&from="+hotelC+"&to="
+    if portalC==clientC:
+        url+=portalC
+    else:
+        url+=portalC+","+clientC
+    res=requests.get(url,headers=header)
+    temp=json.loads(res.text)
+    result={
+        "client":temp['results'][clientC],
+        "portal":temp['results'][portalC],
+        "update":temp['updated'],
+        "bank_mark_up":bank_mark_up
+    }
+    return result
+
 
 def getFacilities():
     result=[]
@@ -108,6 +147,29 @@ def getCurrency():
         result.append(data)
     return result
 
+def generateApiSignature(dataArray, passPhrase = ''):
+    payload = ""
+    if passPhrase != '':
+        dataArray['passphrase'] = passPhrase
+    sortedData = sorted (dataArray)
+    for key in sortedData:
+        payload += key + "=" + urllib.parse.quote_plus(dataArray[key].replace("+", " ")) + "&"
+    payload = payload[:-1]
+    return hashlib.md5(payload.encode()).hexdigest()
+
+def getPfPaymentId(token):
+    url=PAYFAST_END_POINT+"process/query/"+token
+    header={
+        "merchant-id":"13307418",
+        "version":"v1"
+    }
+    timestamp=datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+    header['timestamp']=timestamp
+    header['signature']=generateApiSignature(header)
+    res=requests.get(url=url,headers=header)
+    json_res=json.loads(res.text)
+    pfData=json_res['data']['response']['pf_payment_id']
+    return str(pfData) 
 
 def getRegion():
     select =" destination.code, destination.content, destination.country_code, countries.name"
@@ -124,16 +186,19 @@ def getRegion():
         resultDes.append(data)
     countries=getCountries()
     facilities=getFacilities()
+    currencyInfo=getCurrencyInfo("ZAR")
     result={
         "destination":resultDes,
         "country":countries,
         "facility":facilities,
-        "currency":getCurrency()
+        "currency":getCurrency(),
+        "currencyInfo":currencyInfo
     }
     return result
-
+    
 def main():
-    getCurrency()
+    result=getCurrencyInfo('CAD')
+    print(result)
 
 if __name__ == "__main__":
     main()

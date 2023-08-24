@@ -7,6 +7,8 @@ from hashlib import sha256
 from dotenv import load_dotenv
 from datetime import datetime,timedelta
 from db import selectQuery,updateQuery
+from hotel import bookHotel
+from activity import bookActivity
 
 load_dotenv()
 
@@ -25,8 +27,8 @@ def getHotelBookedDataByUser(params):
     status=int(params['status'])
     offset=int(params['offset'])
     limit=int(params['limit'])
-    select=" A.id, A.type, A.create_at, A.reference, A.status, A.cancellation, A.modification, B.name, D.content, A.indate, A.outDate, A.paid_amount, A.c_currency, p_currency, C.rate, A.uuid, A.voucher, A.room_data "
-    table_from=" ( hotel_book A, hotel_list B, bank_mark_up C, destination D) "
+    select=" A.id, A.type, A.create_at, A.reference, A.status, A.cancellation, A.modification, B.name, D.content, A.indate, A.outDate, A.paid_amount, A.c_currency, p_currency, C.rate, A.uuid, A.voucher, A.room_data, A.pf_id, A.c_h_rate "
+    table_from=" ( hotel_book A, hotel_list B, bank_mark_up C, destination D ) "
     where=f" A.h_code = B.code and D.code = B.destination and A.hd_id = {user_id} and A.bank_mark_up = C.id"
     if status != 0:
         where+=f" and A.status = {status}"
@@ -57,7 +59,7 @@ def getHotelBookedDataByUser(params):
         data={
             "id":item[0],   
             "type":item[1],
-            "create_at": str(item[2]),
+            "create_at": str(item[2]) ,
             "reference":item[3],
             "status":item[4],
             "cancellation":item[5],
@@ -66,12 +68,14 @@ def getHotelBookedDataByUser(params):
             "destination":item[8],
             "indate": str(item[9]),
             "outdate":str( item[10]),
-            "paid":round(item[11],2),
+            "paid":round(item[11]*item[19]*(1+item[14]/100),2),
             "c_currency":item[12],
             "p_currency":item[13],
             "bank_markup":item[14],
             "uuid":item[15],
             "voucher":item[16],
+            "pf_id":item[18],
+            "c_h_rate":item[19],
             "room_data":room_data
         }
         bookList.append(data)
@@ -90,7 +94,7 @@ def getActivityBookedDataByUser(params):
     if status >0:
         where +=f" and status = {status}"
     total=selectQuery('count(id)','activity_book',where)[0][0]
-    select=" id, reference, status, paid_amount, currency, invoice_company, invoice_number, activities, create_at, voucher, type"
+    select=" id, reference, status, paid_amount, c_h_rate, c_currency, invoice_company, invoice_number, activities, create_at, voucher, type, pf_id"
     tempData=selectQuery(select,'activity_book',where,'create_at','DESC',limit,offset)
     tempList=[]
     for item in tempData:
@@ -98,8 +102,8 @@ def getActivityBookedDataByUser(params):
         select='C.*'
         table_from=" (select A.*, B.content  from activity_modality A, destination B where A.destination = B.code ) C"
         where=""
-        if item[7] !=None:
-            ids=item[7].split(',')
+        if item[8] !=None:
+            ids=item[8].split(',')
             for id in ids:
                 where+=f" C.id = {id} or"
             where=where[0:(len(where)-2)]
@@ -124,14 +128,15 @@ def getActivityBookedDataByUser(params):
             "id":item[0],
             "reference":item[1],
             "status":item[2],
-            "paid_amount":item[3],
-            "currency":item[4],
-            "invoice_company":item[5],
-            "invoice_vat":item[6],
+            "paid_amount":round(item[3]*item[4],2) ,
+            "currency":item[5],
+            "invoice_company":item[6],
+            "invoice_vat":item[7],
             "activities":activities,
-            "create_at":str(item[8]) ,
-            "voucher":item[9],
-            "type":item[10]
+            "create_at":str(item[9]) ,
+            "voucher":item[10],
+            "type":item[11],
+            "uuid":item[12]
         }
         tempList.append(data)
     
@@ -159,7 +164,7 @@ def hotelBookingCancelHandlerByUser(params):
     room_data=selectQuery(select, 'hotel_room',where)
     c_diff_flag=0
     cur_c_date=room_data[0][1].split('+')[0]
-    now=datetime.now()
+    now=datetime.utcnow()
     where=f" id = {book_id}"
     for item in room_data:
         if item[1].split('+')[0] !=cur_c_date and getFormattedDateTime(item[1].split('+')[0]) >now:
@@ -190,15 +195,9 @@ def hotelBookingCancelHandlerByUser(params):
     return result
 
 def hotelBookingCancel(reference):
-    endPoint=""
-    if HOTEL_ENV == '1':
-        HOTEL_API_KEY=os.getenv('HOTEL_DEV_KEY')
-        HOTEL_SECRET_KEY=os.getenv('HOTEL_DEV_SECRET')
-        endPoint=os.getenv('TEST_END_POINT')
-    elif HOTEL_ENV == '2':
-        HOTEL_API_KEY=os.getenv('HOTEL_LIVE_KEY')
-        HOTEL_SECRET_KEY=os.getenv('HOTEL_LIVE_SECRET')
-        endPoint=os.getenv('LIVE_END_POINT')
+    HOTEL_API_KEY=os.getenv('HOTEL_LIVE_KEY')
+    HOTEL_SECRET_KEY=os.getenv('HOTEL_LIVE_SECRET')
+    endPoint=os.getenv('LIVE_END_POINT')
     url=endPoint+"/hotel-api/1.0/bookings/"
     url+=reference+"? cancellationFlag=CANCELLATION"
     header={
@@ -223,7 +222,7 @@ def activityBookingCancelHandlerByUser(params):
         "limit":5,
         "status":0
     }
-    now=datetime.now()
+    now=datetime.utcnow()
     select=" id, c_date, c_amount"
     where=f" reference = '{reference}'"
     flag= cancelActivityBook(reference)
@@ -249,15 +248,9 @@ def activityBookingCancelHandlerByUser(params):
         return False
     
 def cancelActivityBook(reference):
-    endPoint=""
-    if ACTIVITY_ENV == '1':
-        ACTIVITY_API_KEY=os.getenv('ACTIVITY_DEV_KEY')
-        ACTIVITY_SECRET_KEY=os.getenv('ACTIVITY_DEV_SECRET')
-        endPoint=os.getenv('TEST_END_POINT')
-    elif ACTIVITY_ENV == '2':
-        ACTIVITY_API_KEY=os.getenv('ACTIVITY_LIVE_KEY')
-        ACTIVITY_SECRET_KEY=os.getenv('ACTIVITY_LIVE_SECRET')
-        endPoint=os.getenv('LIVE_END_POINT')
+    ACTIVITY_API_KEY=os.getenv('ACTIVITY_DEV_KEY')
+    ACTIVITY_SECRET_KEY=os.getenv('ACTIVITY_DEV_SECRET')
+    endPoint=os.getenv('TEST_END_POINT')
     url=endPoint+"/activity-api/3.0/bookings/en/"
     url+=reference+"?cancellationFlag=CANCELLATION"
     header={
@@ -271,19 +264,16 @@ def cancelActivityBook(reference):
         return True
     else:
         return False
-    # book_id=int(params['book_id']) 
-    # user_id=int(params['user_id'])
-    # params={
-    #     "user_id":user_id,
-    #     "offset":0,
-    #     "limit":5,
-    #     "status":0
-    # }
-    # now=datetime.now()
-   
-    # 
-    # 
-    # 
+
+def bookingAllByUser(params):
+    result={}
+    if params.get('hotel') !=None:
+        hotel=bookHotel(params['hotel'])
+        result['hotel']=hotel
+    if params.get('activity') !=None:
+       activity= bookActivity(params['activity'])
+       result['activity']=activity
+    return result
 
 def main():
     params={
